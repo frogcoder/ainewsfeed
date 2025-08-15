@@ -1,0 +1,10 @@
+# Git
+.git
+.gitignore
+.gitattributes
+.github/
+
+*~
+*.ipynb
+chroma_articles_db
+__pycache__

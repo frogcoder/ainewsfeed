@@ -1,0 +1,4 @@
+*~
+*.ipynb
+chroma_articles_db
+__pycache__

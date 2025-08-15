@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Article Reader</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/umd/lucide.js"></script>
+    <script src="/static/js/newsfeed.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fafbfc;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+
+        .article-list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .article-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e9ecef;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .article-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #90a3f5, #a18cd1);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .article-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .article-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .article-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+            color: #2c3e50;
+        }
+
+        .article-meta {
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .article-card p {
+            color: #555;
+            line-height: 1.6;
+        }
+        .article-view {
+            display: none;
+            grid-template-columns: 1fr 300px;
+            gap: 30px;
+            align-items: start;
+        }
+            gap: 30px;
+            align-items: start;
+        }
+
+        .article-content {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e9ecef;
+        }
+
+        .article-title {
+            font-size: 2.2rem;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            line-height: 1.3;
+        }
+
+        .article-meta {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            color: #666;
+        }
+
+        .article-summary {
+            line-height: 1.8;
+            font-size: 1.1rem;
+            color: #444;
+            margin-bottom: 30px;
+        }
+
+        .read-article-btn {
+            background: linear-gradient(135deg, #90a3f5, #a18cd1);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1.05rem;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .read-article-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(144, 163, 245, 0.3);
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .sidebar-main {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .related-articles, .notes-section {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e9ecef;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .related-article {
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .related-article:last-child {
+            border-bottom: none;
+        }
+
+        .related-article:hover {
+            color: #90a3f5;
+            transform: translateX(5px);
+        }
+
+        .related-article h4 {
+            font-size: 0.95rem;
+            margin-bottom: 5px;
+        }
+
+        .related-article p {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .notes-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            background: #f8f9fa;
+            padding: 4px;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 10px 15px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, #90a3f5, #a18cd1);
+            color: white;
+            box-shadow: 0 2px 8px rgba(144, 163, 245, 0.3);
+        }
+
+        .note-input {
+            width: 100%;
+            min-height: 80px;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            resize: vertical;
+            transition: border-color 0.2s ease;
+        }
+
+        .note-input:focus {
+            outline: none;
+            border-color: #90a3f5;
+            box-shadow: 0 0 0 3px rgba(144, 163, 245, 0.1);
+        }
+
+        .save-note-btn {
+            background: linear-gradient(135deg, #90a3f5, #a18cd1);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 10px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .save-note-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(144, 163, 245, 0.4);
+        }
+
+        .notes-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .note-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-left: 4px solid #90a3f5;
+        }
+
+        .note-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .note-content {
+            color: #444;
+            line-height: 1.5;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: #ffffff;
+            border: 2px solid #90a3f5;
+            border-radius: 25px;
+            color: #90a3f5;
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 20px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .back-button:hover {
+            background: #90a3f5;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(144, 163, 245, 0.3);
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .article-view {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .article-content {
+                padding: 25px;
+            }
+            
+            .article-content h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="main-content">
+            <div id="articleList" class="article-list">
+                <div class="article-list-container" id="articleListContainer">
+                    <!-- Articles will be loaded here -->
+                </div>
+            </div>
+
+            <div id="articleView" class="article-view">
+                <div>
+                    <div class="article-content">
+                        <button class="back-button" onclick="showArticleList()">
+                            <i data-lucide="arrow-left"></i>
+                            Back to Articles
+                        </button>
+                        <div id="articleDetails">
+                            <!-- Article content will be loaded here -->
+                        </div>
+                    </div>
+                    
+                    <div class="notes-section">
+                        <h3 class="section-title">
+                            <i data-lucide="sticky-note"></i>
+                            Notes & Comments
+                        </h3>
+                        
+                        <div class="notes-tabs">
+                            <button class="tab-button" onclick="switchTab('private')">Private Notes</button>
+                            <button class="tab-button active" onclick="switchTab('public')">Comments</button>
+                        </div>
+                        
+                        <div id="privateTab" class="tab-content" style="display: none;">
+                            <textarea class="note-input" id="privateNoteInput" placeholder="Write your private note..."></textarea>
+                            <button class="save-note-btn" onclick="saveNote('private')">
+                                <i data-lucide="save"></i>
+                                Save Note
+                            </button>
+                            <div id="privateNotes" class="notes-list">
+                                <!-- Private notes will be displayed here -->
+                            </div>
+                        </div>
+                        
+                        <div id="publicTab" class="tab-content">
+                            <textarea class="note-input" id="publicNoteInput" placeholder="Share your thoughts publicly..."></textarea>
+                            <button class="save-note-btn" onclick="saveNote('public')">
+                                <i data-lucide="message-circle"></i>
+                                Post Comment
+                            </button>
+                            <div id="publicNotes" class="notes-list">
+                                <!-- Public comments will be displayed here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="sidebar">
+                    <div class="related-articles">
+                        <h3 class="section-title">
+                            <i data-lucide="book-open"></i>
+                            Related Articles
+                        </h3>
+                        <div id="relatedArticles">
+                            <!-- Related articles will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data - in a real app, this would come from an API
+        const articles = [
+            {
+                id: 1,
+                title: "The Future of Artificial Intelligence in Healthcare",
+                excerpt: "Exploring how AI is revolutionizing medical diagnosis, treatment planning, and patient care across the healthcare industry.",
+                url: "https://www.nature.com/articles/s41591-021-01614-0",
+                date: "2024-08-05"
+            },
+            {
+                id: 2,
+                title: "Sustainable Architecture: Building for Tomorrow",
+                excerpt: "How architects are reimagining construction to create buildings that work in harmony with the environment.",
+                url: "https://www.archdaily.com/tag/sustainable-architecture",
+                date: "2024-08-03"
+            },
+            {
+                id: 3,
+                title: "The Psychology of Decision Making in Digital Age",
+                excerpt: "Understanding how our brains adapt to an overwhelming amount of choices and information in the modern world.",
+                url: "https://www.scientificamerican.com/article/the-science-of-science-communication/",
+                date: "2024-08-01"
+            },
+            {
+                id: 4,
+                title: "Space Exploration: The Next Frontier of Human Settlement",
+                excerpt: "From Mars colonies to asteroid mining, exploring the realistic possibilities for human expansion beyond Earth.",
+                url: "https://www.nasa.gov/news/releases/2021/nasa-announces-new-james-webb-space-telescope-target-launch-date/",
+                date: "2024-07-29"
+            },
+            {
+                id: 5,
+                title: "The Evolution of Remote Work Culture",
+                excerpt: "How distributed teams are redefining productivity, collaboration, and work-life balance in the post-pandemic world.",
+                url: "https://hbr.org/2020/03/a-guide-to-managing-your-newly-remote-workers",
+                date: "2024-07-27"
+            },
+            {
+                id: 6,
+                title: "Quantum Computing: Breaking the Barriers",
+                excerpt: "Understanding the revolutionary potential of quantum computers and their impact on encryption, drug discovery, and optimization problems.",
+                url: "https://www.ibm.com/quantum-computing/",
+                date: "2024-07-25"
+            }
+        ];
+
+        // Application state
+        let currentArticleId = null;
+        let currentTab = 'public';
+        let privateNotes = {};
+        let publicComments = {
+            1: [
+                { id: 1, content: "This is a fascinating look at AI in healthcare. The potential for early cancer detection is incredible!", author: "Sarah Johnson", timestamp: "2024-08-06 14:30" },
+                { id: 2, content: "I work in healthcare and we're already seeing some of these applications. Exciting times ahead.", author: "Dr. Michael Chen", timestamp: "2024-08-06 16:45" },
+                { id: 3, content: "Important to consider the ethical implications though. Great article overall.", author: "Emma Wilson", timestamp: "2024-08-07 09:15" }
+            ],
+            2: [
+                { id: 4, content: "As an architect, I appreciate the focus on biomimetic design. Nature truly is the best teacher.", author: "David Martinez", timestamp: "2024-08-04 11:20" },
+                { id: 5, content: "The mycelium insulation mentioned here is revolutionary. We need more innovations like this.", author: "Lisa Green", timestamp: "2024-08-04 17:30" }
+            ],
+            3: [
+                { id: 6, content: "Decision fatigue is so real! This explains why I feel overwhelmed by simple choices sometimes.", author: "Alex Taylor", timestamp: "2024-08-02 13:45" },
+                { id: 7, content: "The satisficing concept is particularly useful. I'm going to try implementing this approach.", author: "Jordan Kim", timestamp: "2024-08-02 19:22" },
+                { id: 8, content: "Fascinating research. The paradox of choice is definitely something we all experience daily.", author: "Rachel Brown", timestamp: "2024-08-03 08:10" }
+            ],
+            4: [
+                { id: 9, content: "Mars colonization feels like science fiction, but the technology progress is undeniable.", author: "Chris Rodriguez", timestamp: "2024-07-30 15:55" },
+                { id: 10, content: "The asteroid mining potential is mind-blowing. Could really change everything.", author: "Maya Patel", timestamp: "2024-07-31 12:30" }
+            ],
+            5: [
+                { id: 11, content: "Remote work has definitely changed my life for the better. Great insights on culture building.", author: "Tom Anderson", timestamp: "2024-07-28 10:15" },
+                { id: 12, content: "The mentorship challenge is real. Companies need to address this gap.", author: "Nina Foster", timestamp: "2024-07-28 14:40" }
+            ],
+            6: [
+                { id: 13, content: "Quantum computing is mind-bending. Hard to wrap your head around superposition.", author: "James Liu", timestamp: "2024-07-26 16:20" },
+                { id: 14, content: "The encryption implications are both exciting and terrifying. We need to prepare.", author: "Amanda Davis", timestamp: "2024-07-26 20:10" }
+            ]
+        };
+
+        // Initialize the application
+        async function init() {
+            await loadArticles();
+            lucide.createIcons();
+            
+            // Handle browser navigation
+            window.addEventListener('popstate', function(event) {
+                if (event.state && event.state.articleId) {
+                    showArticle(event.state.articleId, false);
+                } else {
+                    showArticleList(false);
+                }
+            });
+            
+            // Check if there's an article ID in the URL on load
+            const urlParams = new URLSearchParams(window.location.search);
+            const articleId = urlParams.get('article');
+            if (articleId) {
+                const article = articles.find(a => a.id === parseInt(articleId));
+                if (article) {
+                    showArticle(parseInt(articleId), false);
+                }
+            }
+        }
+
+        // Load articles into the list
+        async function loadArticles() {
+            const articleListContainer = document.getElementById('articleListContainer');
+            articleListContainer.innerHTML = '';
+          userArticles = await fetchArticlesAsync("{{ userId }}");
+          console.log("user articles", userArticles);
+            userArticles.forEach(article => {
+                const articleCard = document.createElement('div');
+                articleCard.className = 'article-card';
+              articleCard.onclick = async() => {showArticle(article.embedding_id, userArticles)};
+                
+                articleCard.innerHTML = `
+                    <h3>${article.title}</h3>
+                    <div class="article-meta">
+                        <span>${article.published_date}</span>
+                    </div>
+                    <p>${article.summary}</p>
+                `;
+                
+                articleListContainer.appendChild(articleCard);
+            });
+            
+            lucide.createIcons();
+        }
+
+        // Show individual article
+      async function showArticle(articleId, articlesSource, pushState = true) {
+            currentArticleId = articleId;
+            const article = articlesSource.find(a => a.embedding_id === articleId);
+            
+            // Update URL and browser history
+            if (pushState) {
+                const newUrl = `${window.location.pathname}?article=${articleId}`;
+                history.pushState({articleId: articleId}, '', newUrl);
+            }
+            
+            // Hide article list, show article view
+            document.getElementById('articleList').style.display = 'none';
+            document.getElementById('articleView').style.display = 'grid';
+            
+            // Load article content
+            const articleDetails = document.getElementById('articleDetails');
+            articleDetails.innerHTML = `
+                <h1 class="article-title" onclick="window.open('${article.url}', '_blank')" style="cursor: pointer;">${article.title}</h1>
+                <div class="article-meta">
+                    <span><i data-lucide="calendar"></i> ${article.published_date}</span>
+                </div>
+                <div class="article-summary" onclick="window.open('${article.url}', '_blank')" style="cursor: pointer;">${article.summary}</div>
+                <a href="${article.url}" target="_blank" class="read-article-btn">
+                    <i data-lucide="external-link"></i>
+                    Read Full Article
+                </a>
+            `;
+            
+            // Load related articles
+            await loadRelatedArticles(articleId);
+            
+            // Load notes for this article
+            loadNotes(articleId);
+            
+            lucide.createIcons();
+        }
+
+        // Load related articles
+        async function loadRelatedArticles(currentId) {
+          // const related = articles.filter(a => a.id !== currentId).slice(0, 4);
+          related = await fetchRelatedArticlesAsync(currentId);
+          console.log("Related articles:", related);
+            const relatedContainer = document.getElementById('relatedArticles');
+            
+            if (related.length === 0) {
+                relatedContainer.innerHTML = '<div class="empty-state">No related articles found</div>';
+                return;
+            }
+            
+            relatedContainer.innerHTML = related.map(article => `
+                <div class="related-article" onclick="showArticle(${article.id})">
+                    <h4>${article.title}</h4>
+                    <p>${article.published_date}</p>
+                </div>
+            `).join('');
+        }
+
+        // Show article list
+        function showArticleList(pushState = true) {
+            document.getElementById('articleList').style.display = 'block';
+            document.getElementById('articleView').style.display = 'none';
+            currentArticleId = null;
+            
+            // Update URL and browser history
+            if (pushState) {
+                history.pushState({}, '', window.location.pathname);
+            }
+        }
+
+        // Switch between tabs
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Show/hide tab content
+            document.getElementById('privateTab').style.display = tab === 'private' ? 'block' : 'none';
+            document.getElementById('publicTab').style.display = tab === 'public' ? 'block' : 'none';
+        }
+
+        // Save note
+        function saveNote(type) {
+            if (!currentArticleId) return;
+            
+            const input = document.getElementById(type + 'NoteInput');
+            const content = input.value.trim();
+            
+            if (!content) return;
+            
+            const note = {
+                id: Date.now(),
+                content: content,
+                timestamp: new Date().toLocaleString(),
+                author: type === 'public' ? 'You' : null
+            };
+            
+            if (type === 'private') {
+                if (!privateNotes[currentArticleId]) {
+                    privateNotes[currentArticleId] = [];
+                }
+                privateNotes[currentArticleId].push(note);
+            } else {
+                if (!publicComments[currentArticleId]) {
+                    publicComments[currentArticleId] = [];
+                }
+                publicComments[currentArticleId].push(note);
+            }
+            
+            input.value = '';
+            loadNotes(currentArticleId);
+        }
+
+        // Load notes for current article
+        function loadNotes(articleId) {
+            // Load private notes
+            const privateContainer = document.getElementById('privateNotes');
+            const userPrivateNotes = privateNotes[articleId] || [];
+            
+            if (userPrivateNotes.length === 0) {
+                privateContainer.innerHTML = '<div class="empty-state">No private notes yet</div>';
+            } else {
+                privateContainer.innerHTML = userPrivateNotes.map(note => `
+                    <div class="note-item">
+                        <div class="note-header">
+                            <span>${note.timestamp}</span>
+                        </div>
+                        <div class="note-content">${note.content}</div>
+                    </div>
+                `).join('');
+            }
+            
+            // Load public comments
+            const publicContainer = document.getElementById('publicNotes');
+            const articleComments = publicComments[articleId] || [];
+            
+            if (articleComments.length === 0) {
+                publicContainer.innerHTML = '<div class="empty-state">No comments yet. Be the first to share your thoughts!</div>';
+            } else {
+                publicContainer.innerHTML = articleComments.map(comment => `
+                    <div class="note-item">
+                        <div class="note-header">
+                            <span><strong>${comment.author}</strong> • ${comment.timestamp}</span>
+                        </div>
+                        <div class="note-content">${comment.content}</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Initialize the app when page loads
+        window.addEventListener('load', async() => {await init();});
+    </script>
+</body>
+</html>
