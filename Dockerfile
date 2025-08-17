@@ -6,4 +6,5 @@ COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 EXPOSE 8000
 COPY . .
-CMD ["fastapi", "dev", "newsfeed.py"]
+ENV NLTK_DATA="./nltk_data"
+CMD ["fastapi", "run", "serve.py"]
