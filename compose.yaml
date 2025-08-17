@@ -1,8 +1,10 @@
 services:
   web:
-    build: .
+    image: 'hsitengliu/ai-news-feed:0.01'
     ports:
       - 8000:8000
+    volumes:
+      - ${PWD}/chroma_articles_db/:/app/chroma_articles_db/
   postgres:
     image: 'postgres:latest'
     ports:
