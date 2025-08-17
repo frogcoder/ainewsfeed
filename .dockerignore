@@ -8,3 +8,6 @@
 *.ipynb
 chroma_articles_db
 __pycache__
+
+# postgresql data
+db-data
