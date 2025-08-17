@@ -11,6 +11,6 @@ services:
       POSTGRES_USER: newsfeed
       POSTGRES_PASSWORD: newsfeed
       POSTGRES_DB: newsfeed
-    volume:
+    volumes:
       - ${PWD}/db-data/:/var/lib/postgresql/data/
       - ${PWD}/init.sql:/docker-entrypoint-initdb.d/init.sql
