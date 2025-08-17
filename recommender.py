@@ -6,36 +6,20 @@ import tensorflow_recommenders as tfrs
 import datasets
 
 
-ratings_ds = datasets.load_ratings()
-articles_ds = datasets.load_articles()
-
-ratings = ratings_ds.map(lambda x: {
-    "embedding_id": x["embedding_id"],
-    "user_id": x["user_id"],
-    "rating": x["rating"]
-})
-articles = articles_ds.map(lambda x: x["embedding_id"])
-
-shuffled = ratings.shuffle(100_000, reshuffle_each_iteration=False)
-
-train_size = round(len(ratings) * 0.8)
-train = shuffled.take(train_size)
-test = shuffled.skip(train_size)
-
-article_ids = articles.batch(100)
-user_ids = ratings.batch(100).map(lambda x: x["user_id"])
-
-unique_article_ids = np.unique(np.concatenate(list(article_ids)))
-unique_user_ids = np.unique(np.concatenate(list(user_ids)))
-
-
-
 #The full model
 class FeedRecommenderModel(tfrs.Model):
-    def __init__(self, rating_weight: float, retrieval_weight: float) -> None:
+    def __init__(self, articles, ratings, rating_weight: float, retrieval_weight: float) -> None:
         super().__init__()
         embedding_dimension = 32
+        self.articles = articles
+        self.ratings = ratings
+        
+        article_ids = articles.batch(100)
+        user_ids = ratings.batch(100).map(lambda x: x["user_id"])
 
+        unique_article_ids = np.unique(np.concatenate(list(article_ids)))
+        unique_user_ids = np.unique(np.concatenate(list(user_ids)))
+        
         user_model = tf.keras.Sequential([
             tf.keras.layers.StringLookup(
                 vocabulary=unique_user_ids, mask_token=None),
@@ -100,13 +84,29 @@ class FeedRecommenderModel(tfrs.Model):
 
 
 def train_model() -> FeedRecommenderModel:
-    model = FeedRecommenderModel(rating_weight=1.0, retrieval_weight=1.0)
+    ratings_ds = datasets.load_ratings()
+    articles_ds = datasets.load_articles()
+
+    ratings = ratings_ds.map(lambda x: {
+        "embedding_id": x["embedding_id"],
+        "user_id": x["user_id"],
+        "rating": x["rating"]
+    })
+    articles = articles_ds.map(lambda x: x["embedding_id"])
+
+    shuffled = ratings.shuffle(100_000, reshuffle_each_iteration=False)
+
+    train_size = round(len(ratings) * 0.8)
+    train = shuffled.take(train_size)
+    test = shuffled.skip(train_size)
+
+    model = FeedRecommenderModel(articles, ratings, rating_weight=1.0, retrieval_weight=1.0)
     model.compile(optimizer=tf.keras.optimizers.Adagrad(learning_rate=0.1))
 
     cached_train = train.shuffle(100_000).batch(128).cache()
     cached_test = test.batch(64).cache()
 
-    model.fit(cached_train, epochs=3)
+    model.fit(cached_train, epochs=10)
     metrics = model.evaluate(cached_test, return_dict=True)
 
     print(f"Retrieval top-100 accuracy: {metrics['factorized_top_k/top_100_categorical_accuracy']:.3f}.")
@@ -117,6 +117,7 @@ def train_model() -> FeedRecommenderModel:
 def get_rated_recommendations(model: FeedRecommenderModel, user_id: str, max_count: int):
     #Making predictions
     index = tfrs.layers.factorized_top_k.BruteForce(model.user_model, max_count)
+    articles = model.articles
     index.index_from_dataset(
         tf.data.Dataset.zip((articles.batch(100), articles.batch(100).map(model.article_model)))
     )

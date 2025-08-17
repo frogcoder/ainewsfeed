@@ -3,10 +3,12 @@ import tensorflow as tf
 from sqlalchemy import create_engine
 
 
-DEFAULT_CONNECTION_STRING = "postgresql://newsfeed:newsfeed@localhost:5432/newsfeed"
+CHROMA_PATH = "./chroma_articles_db"
+POSTGRES_URL = "postgresql://newsfeed:newsfeed@postgres:5432/newsfeed"
+
 
 def load_ratings(
-        connection_string: str=DEFAULT_CONNECTION_STRING,
+        connection_string: str=POSTGRES_URL,
         max_rating: int=5
 ) -> tf.data.Dataset:
     query = """
@@ -32,7 +34,7 @@ def load_ratings(
 
 
 def load_articles(
-        connection_string=DEFAULT_CONNECTION_STRING) -> tf.data.Dataset:
+        connection_string=POSTGRES_URL) -> tf.data.Dataset:
     query = "SELECT embedding_id, title, source from articles WHERE embedding_id IS NOT NULL"
     engine = create_engine(connection_string)
     df = pd.read_sql_query(query, engine)

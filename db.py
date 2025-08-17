@@ -1,13 +1,16 @@
+import os
 from dataclasses import dataclass
 from datetime import datetime
 import psycopg2
-from newsscrapper import POSTGRES_URL
-from newsscrapper import CHROMA_PATH
-from newsscrapper import DatabaseManager
-from newsscrapper import ArticleScrapingSystem
+import newsscrapper
+from datasets import CHROMA_PATH
+from datasets import POSTGRES_URL
 
-db_manager = DatabaseManager(POSTGRES_URL, CHROMA_PATH)
-db_manager.init_chroma()
+
+db_manager = newsscrapper.get_chroma_data_manager(
+    os.getenv("CHROMA_PATH", CHROMA_PATH)
+)
+
 
 @dataclass
 class Article:

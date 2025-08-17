@@ -1,13 +1,12 @@
 import asyncio
+import os
 from typing import Annotated
 from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from newsscrapper import POSTGRES_URL
-from newsscrapper import CHROMA_PATH
-from newsscrapper import ArticleScrapingSystem
+import newsscrapper
 import recommender
 import db
 
@@ -28,25 +27,7 @@ model = None
 
 @app.post("/scrape")
 async def scrape():
-    # Configuration
-    
-    # Initialize system
-    scraper_system = ArticleScrapingSystem(
-        postgres_url=POSTGRES_URL,
-        chroma_path=CHROMA_PATH
-    )
-    
-    try:
-        await scraper_system.initialize()
-        
-        # Run scraping cycle
-        results = await scraper_system.run_scraping_cycle(articles_per_source=15)
-        print(f"Scraping completed: {results}")
-        
-    except Exception as e:
-        logging.error(f"Error in main execution: {e}")
-    finally:
-        await scraper_system.cleanup()
+    await newsscrapper.scrape()
 
 
 @app.post("/train")

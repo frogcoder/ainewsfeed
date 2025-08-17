@@ -24,9 +24,9 @@ from urllib.parse import urljoin, urlparse
 import os
 from newspaper import Article
 import nltk
+from datasets import CHROMA_PATH
+from datasets import POSTGRES_URL
 
-POSTGRES_URL = "postgresql://newsfeed:newsfeed@postgres:5432/newsfeed"
-CHROMA_PATH = "./chroma_articles_db"
 
 # Download required NLTK data
 try:
@@ -48,8 +48,9 @@ class ArticleData:
     tags: List[str]
     content_hash: str
 
+
 class DatabaseManager:
-    def __init__(self, postgres_url: str, chroma_path: str = "./chroma_db"):
+    def __init__(self, postgres_url: str, chroma_path: str):
         self.postgres_url = postgres_url
         self.chroma_path = chroma_path
         self.pool = None
@@ -400,7 +401,7 @@ class HackerNewsScraper:
 
 
 class ArticleScrapingSystem:
-    def __init__(self, postgres_url: str, chroma_path: str = "./chroma_db"):
+    def __init__(self, postgres_url: str, chroma_path: str):
         self.db_manager = DatabaseManager(postgres_url, chroma_path)
         self.news_scraper = NewsSourceScraper()
         self.hn_scraper = HackerNewsScraper()
@@ -532,15 +533,40 @@ class ArticleScrapingSystem:
             await self.db_manager.pool.close()
         logging.info("Cleanup completed")
 
+
+def get_chroma_data_manager(chroma_path: str) -> DatabaseManager:
+    db_manager = DatabaseManager(POSTGRES_URL, chroma_path)
+    db_manager.init_chroma()
+    return db_manager
+
+
+def get_scrapper() -> ArticleScrapingSystem:
+    return ArticleScrapingSystem(
+        postgres_url=os.getenv("POSTGRES_URL", POSTGRES_URL),
+        chroma_path=os.getenv("CHROMA_PATH", CHROMA_PATH)
+    )
+
+async def scrape():
+    # Initialize system
+    scraper_system = get_scrapper()
+    
+    try:
+        await scraper_system.initialize()
+        
+        # Run scraping cycle
+        results = await scraper_system.run_scraping_cycle(articles_per_source=15)
+        print(f"Scraping completed: {results}")
+        
+    except Exception as e:
+        logging.error(f"Scraping error: {e}")
+    finally:
+        await scraper_system.cleanup()
+
+
 # Usage example and configuration
 async def main():
-    # Configuration
-    
     # Initialize system
-    scraper_system = ArticleScrapingSystem(
-        postgres_url=POSTGRES_URL,
-        chroma_path=CHROMA_PATH
-    )
+    scraper_system = get_scrapper()
     
     try:
         await scraper_system.initialize()
@@ -564,7 +590,7 @@ async def run_scheduled_scraping():
     """Run scraping on a schedule"""
     scraper_system = ArticleScrapingSystem(
         postgres_url=os.getenv("POSTGRES_URL", POSTGRES_URL),
-        chroma_path=os.getenv("CHROMA_PATH", "./chroma_articles_db")
+        chroma_path=os.getenv("CHROMA_PATH", CHROMA_PATH)
     )
     
     try:
@@ -588,6 +614,7 @@ async def run_scheduled_scraping():
     finally:
         await scraper_system.cleanup()
 
+    
 if __name__ == "__main__":
     # For one-time scraping
     asyncio.run(main())
