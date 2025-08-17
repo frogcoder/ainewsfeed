@@ -1,5 +1,4 @@
-FROM python:3.12-alpine
-RUN apk add --no-cache rust cargo
+FROM python:3.12
 
 WORKDIR /app
 ENV TF_USE_LEGACY_KERAS="1"
